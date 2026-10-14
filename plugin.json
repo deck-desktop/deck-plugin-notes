@@ -3,6 +3,7 @@
   "name": "Notes",
   "description": "Markdown notes for each project, in a pane beside your terminals. One file per note, autosaved, with live preview, a formatting bar and drag to reorder.",
   "icon": "NotebookPen",
-  "version": "1.0.0",
+  "color": "#facc15",
+  "version": "1.0.1",
   "minDeck": "1.1.0"
 }
