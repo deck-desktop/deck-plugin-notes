@@ -19,11 +19,9 @@ import {
   type TabItem, type ConfirmState, type NamePromptState,
 } from "../shim/ui.js";
 import {
-  notesScope, notesList, notesRead, notesWrite, notesDelete, notesRename,
-} from "../shim/bridge.js";
+  GENERAL, notesScope, notesList, notesRead, notesWrite, notesDelete, notesRename,
+} from "./store";
 
-/** The scope shown for a thought that belongs to no project. Matches vault.rs. */
-const GENERAL = "_general";
 const label = (scope: string) => (scope === GENERAL ? "General" : scope);
 
 // Text size, in px. Per machine rather than per note or per project: it is about this screen and
@@ -107,12 +105,12 @@ export function PaneView({ cwd }: { cwd: string }) {
   const reload = useCallback(async (scopeName: string) => {
     const ticket = ++listTicket.current;
     setLoading(true);
-    const list = await notesList(scopeName).catch(() => [] as string[]);
+    const list = await notesList(scopeName).catch((e) => { console.warn("[notes] list failed", e); return [] as string[]; });
     if (ticket !== listTicket.current) return;
     setNames(ordered(scopeName, list));
     const want = lastOpen.get(scopeName);
     const next = want && list.includes(want) ? want : (list[0] ?? null);
-    const body = next ? await notesRead(scopeName, next).catch(() => "") : "";
+    const body = next ? await notesRead(scopeName, next).catch((e) => { console.warn("[notes] read failed", e); return ""; }) : "";
     if (ticket !== listTicket.current) return;
     setActive(next);
     // The loader owns the baseline. Without this the autosave effect compares freshly-read
@@ -134,7 +132,7 @@ export function PaneView({ cwd }: { cwd: string }) {
     const { scope: sc, name, text: body } = openRef.current;
     if (!sc || !name || body === lastSaved.current) return;
     lastSaved.current = body;
-    await notesWrite(sc, name, body).catch(() => {});
+    await notesWrite(sc, name, body).catch((e) => console.warn("[notes] save failed", e));
   }, []);
 
   // Scope changed (project ↔ General). Flush first: the note on screen belongs to the scope
@@ -165,7 +163,7 @@ export function PaneView({ cwd }: { cwd: string }) {
     if (!current) return;
     // An edit that has not hit its debounce yet must not be dropped by the switch.
     await flush();
-    const body = await notesRead(current, name).catch(() => "");
+    const body = await notesRead(current, name).catch((e) => { console.warn("[notes] read failed", e); return ""; });
     lastOpen.set(current, name);
     setActive(name);
     lastSaved.current = body; // baseline first, so the effect below sees nothing to write
