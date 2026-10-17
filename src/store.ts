@@ -32,7 +32,11 @@ export function safeSegment(s: string): string {
   return t;
 }
 
-const file = (scope: string, name: string) => `${safeSegment(scope)}/${safeSegment(name)}.md`;
+// Names are given in full, data/notes/...: the shim keeps a name in this plugin's folder only when it
+// has no "/" in it, and takes one that has as Deck's own ("state/term-procs"), from the top of the
+// config folder. "<scope>/<title>.md" alone was read and written there, so every note opened empty.
+const OWN = "data/notes/";
+const file = (scope: string, name: string) => `${OWN}${safeSegment(scope)}/${safeSegment(name)}.md`;
 
 export const notesRead = (scope: string, name: string) => configRead(file(scope, name));
 /** An empty note is kept: a new tab starts empty, and only a JSON config is removed by "". */
@@ -83,7 +87,7 @@ export async function notesScope(cwd: string): Promise<string> {
   const taken = new Set((await fsList(await dataDir()).catch(() => [])).filter((e) => e.dir).map((e) => e.name.toLowerCase()));
   for (let n = 1; n <= 20; n++) {
     const name = n === 1 ? base : `${base}-${n}`;
-    const marker = `${name}/.deck-cwd`;
+    const marker = `${OWN}${name}/.deck-cwd`;
     // Not there: claim it, so a later call for a DIFFERENT cwd of the same name steps past it.
     if (!taken.has(name.toLowerCase())) { await configWrite(marker, c); return name; }
     const owner = (await configRead(marker)).trim();
