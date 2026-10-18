@@ -12,7 +12,7 @@
 // drift out of step with the directory. Deliberately no folders, tags, search or preview — this
 // is the drawer you scribble in, not a place for organising.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Loader2, StickyNote } from "lucide-react";
+import { Loader2, Plus, StickyNote } from "lucide-react";
 import type { EditorView } from "@codemirror/view";
 import {
   TabStrip, ConfirmDialog, NamePrompt, MarkdownToolbar, cmSurface, MarkdownLive,
@@ -232,7 +232,7 @@ export function PaneView({ cwd }: { cwd: string }) {
     // No frame or background of its own: the pane draws both, the same as for the Editor beside
     // it. A card here was a second border inside the pane, in a different shade from its neighbours.
     <div className="flex min-h-0 flex-1 flex-col overflow-clip">
-      <TabStrip pill
+      <TabStrip chip
         tabs={tabs} activeId={active}
         onSelect={(id) => void open(id)}
         onClose={remove}
@@ -246,12 +246,12 @@ export function PaneView({ cwd }: { cwd: string }) {
         onAdd={() => void add()} addTitle="New note"
       />
       {err && (
-        <div className="shrink-0 px-3 py-1 text-[11px]" style={{ color: "var(--danger)" }}
+        <div className="shrink-0 cursor-pointer px-3 py-1 text-[11.5px] text-red-400" title="Dismiss"
           onClick={() => setErr("")}>{err}</div>
       )}
       {loading ? (
-        <div className="flex flex-1 items-center justify-center text-sm text-text-muted">
-          <Loader2 size={16} className="mr-2 animate-spin" /> Loading notes…
+        <div className="flex flex-1 items-center justify-center text-[12.5px] text-text-muted">
+          <Loader2 size={14} className="mr-2 animate-spin" /> Loading notes…
         </div>
       ) : active ? (
         <div className="flex min-h-0 flex-1 flex-col">
@@ -273,10 +273,19 @@ export function PaneView({ cwd }: { cwd: string }) {
           </div>
         </div>
       ) : (
-        <div className="flex flex-1 flex-col items-center justify-center gap-2 text-sm text-text-muted">
-          <StickyNote size={20} />
-          <span>No notes in {label(current || "…")} yet.</span>
-          <button onClick={() => void add()} className="text-[var(--accent)] hover:underline">Write one</button>
+        <div className="flex flex-1 items-center justify-center p-6">
+          <div className="flex max-w-sm items-start gap-2.5 rounded-lg border border-subtle px-3 py-3 text-[12px] leading-relaxed text-text-muted"
+            style={{ background: "var(--bg-elev)" }}>
+            <StickyNote size={16} className="mt-0.5 shrink-0" />
+            <div className="flex flex-col items-start gap-2">
+              <span>No notes in {label(current || "…")} yet. Each note is a plain markdown file, saved as you type.</span>
+              <button onClick={() => void add()}
+                className="flex h-8 items-center gap-1.5 rounded-lg px-3 text-[12.5px] font-medium text-white transition hover:brightness-110"
+                style={{ background: "var(--accent)" }}>
+                <Plus size={13} /> Write one
+              </button>
+            </div>
+          </div>
         </div>
       )}
       <ConfirmDialog state={confirm} onClose={() => setConfirm(null)} />
