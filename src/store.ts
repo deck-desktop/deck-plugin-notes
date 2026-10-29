@@ -39,6 +39,9 @@ const OWN = "data/notes/";
 const file = (scope: string, name: string) => `${OWN}${safeSegment(scope)}/${safeSegment(name)}.md`;
 
 export const notesRead = (scope: string, name: string) => configRead(file(scope, name));
+/** The note's file on disk, for the editor: an image pasted into it is saved beside it, and a
+ *  relative image link resolves from there. */
+export const notesPath = async (scope: string, name: string) => `${await dataDir()}\\${safeSegment(scope)}\\${safeSegment(name)}.md`;
 /** An empty note is kept: a new tab starts empty, and only a JSON config is removed by "". */
 export const notesWrite = (scope: string, name: string, text: string) => configWrite(file(scope, name), text);
 export const notesDelete = (scope: string, name: string) => configDelete(file(scope, name));
