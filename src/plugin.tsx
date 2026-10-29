@@ -19,7 +19,7 @@ import {
   type TabItem, type ConfirmState, type NamePromptState,
 } from "../shim/ui.js";
 import {
-  GENERAL, notesScope, notesList, notesRead, notesWrite, notesDelete, notesRename,
+  GENERAL, notesScope, notesList, notesRead, notesWrite, notesDelete, notesRename, notesPath,
 } from "./store";
 
 const label = (scope: string) => (scope === GENERAL ? "General" : scope);
@@ -77,6 +77,14 @@ export function PaneView({ cwd }: { cwd: string }) {
   // Wrapped once per editor instance rather than per render: a fresh object every render would
   // change the toolbar's props on every keystroke.
   const surface = useMemo(() => (cmView ? cmSurface(cmView) : null), [cmView]);
+  // The open note's file, so the editor can save a pasted image beside it and load relative images.
+  const [path, setPath] = useState<string | undefined>();
+  useEffect(() => {
+    if (!scope || !active) { setPath(undefined); return; }
+    let live = true;
+    void notesPath(scope, active).then((p) => { if (live) setPath(p); }).catch((e) => console.warn("[notes] finding the note's file failed", e));
+    return () => { live = false; };
+  }, [scope, active]);
   const [zoom, setZoom] = useState(loadZoom);
   useEffect(() => { try { localStorage.setItem(ZOOM_KEY, String(zoom)); } catch { /* private mode */ } }, [zoom]);
   // 0 resets, which is what the size readout in the toolbar does when clicked.
@@ -268,8 +276,8 @@ export function PaneView({ cwd }: { cwd: string }) {
             {/* Keyed by scope+name: MarkdownLive builds its CodeMirror state once and thereafter
                 only patches the doc, so remounting per note is what gives each its own undo
                 history. NOT keyed on zoom — that would throw the history away on every step. */}
-            <MarkdownLive key={`${current}/${active}`}
-              value={text} onChange={setText} onView={setCmView} flush fontSize={zoom} />
+            <MarkdownLive key={`${current}/${active}/${path ?? ""}`}
+              value={text} path={path} onChange={setText} onView={setCmView} flush fontSize={zoom} />
           </div>
         </div>
       ) : (
