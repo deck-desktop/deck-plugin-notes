@@ -5,5 +5,8 @@
   "icon": "NotebookPen",
   "color": "#facc15",
   "version": "1.2.0",
-  "minDeck": "1.12.3"
+  "minDeck": "1.12.3",
+  "permissions": [
+    "files"
+  ]
 }
