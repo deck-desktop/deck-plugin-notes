@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.2 (2026-11-12)
+
+- A note comes back where you left it: switching tabs and returning keeps its scroll position.
+
 ## 1.2.1 (2026-10-30)
 
 - A licence, this changelog, a README rewritten with a screenshot, and the permissions it uses
