@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.2.3 (2026-11-13)
 
 - A note with images, tables or code blocks comes back at the same place too. It was put back by
   pixels, before the images above had their height, so it landed a little off.
