@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- A note with images, tables or code blocks comes back at the same place too. It was put back by
+  pixels, before the images above had their height, so it landed a little off.
+
 ## 1.2.2 (2026-11-12)
 
 - A note comes back where you left it: switching tabs and returning keeps its scroll position.

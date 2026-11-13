@@ -21,6 +21,7 @@ import {
 import {
   GENERAL, notesScope, notesList, notesRead, notesWrite, notesDelete, notesRename, notesPath,
 } from "./store";
+import { keepSpot } from "./spot";
 
 const label = (scope: string) => (scope === GENERAL ? "General" : scope);
 
@@ -59,13 +60,6 @@ const ordered = (scope: string, list: string[]) => {
   return [...known, ...list.filter((n) => !known.includes(n))];
 };
 
-/**
- * Where each note was scrolled to, and its cursor, for this session. A tab you leave unmounts, and
- * its note came back at the top; it comes back here instead. Saved as you scroll, click and type
- * (never on unmount, when the editor is already gone and reads 0).
- */
-const spots = new Map<string, { top: number; head: number }>();
-
 // A pane view only, with no tab of its own: notes belong to a workspace's folder, which a pane
 // is given and a whole-window tab is not.
 export function PaneView({ cwd }: { cwd: string }) {
@@ -84,42 +78,11 @@ export function PaneView({ cwd }: { cwd: string }) {
   // Wrapped once per editor instance rather than per render: a fresh object every render would
   // change the toolbar's props on every keystroke.
   const surface = useMemo(() => (cmView ? cmSurface(cmView) : null), [cmView]);
-  // Back where the note was left (spots, above). The text lands after the editor does, so the
-  // scroll is put back on every frame until it holds, for up to a few seconds, or until you
-  // scroll or type yourself; meanwhile the editor's own scrolling (to the top, as the text loads)
-  // is not saved over the spot.
+  // Back where the note was left (spot.ts), even once its images have loaded.
   const spotKey = `${scope}/${active ?? ""}`;
-  useEffect(() => {
-    const v = cmView;
-    if (!v || !active) return;
-    const saved = spots.get(spotKey);
-    let restoring = !!saved, raf = 0;
-    const until = Date.now() + 3000;
-    const put = () => {
-      if (!saved || !restoring) return;
-      if (saved.head <= v.state.doc.length && v.state.selection.main.head !== saved.head) v.dispatch({ selection: { anchor: saved.head } });
-      v.scrollDOM.scrollTop = saved.top;
-      if (Math.abs(v.scrollDOM.scrollTop - saved.top) <= 2 || Date.now() > until) restoring = false;
-      else raf = requestAnimationFrame(put);
-    };
-    raf = requestAnimationFrame(put);
-    const keep = () => { if (!restoring) spots.set(spotKey, { top: v.scrollDOM.scrollTop, head: v.state.selection.main.head }); };
-    const yours = () => { restoring = false; };
-    v.scrollDOM.addEventListener("scroll", keep, { passive: true });
-    v.scrollDOM.addEventListener("wheel", yours, { passive: true });
-    v.contentDOM.addEventListener("keydown", yours);
-    v.contentDOM.addEventListener("keyup", keep);
-    v.contentDOM.addEventListener("mouseup", keep);
-    return () => {
-      cancelAnimationFrame(raf);
-      v.scrollDOM.removeEventListener("scroll", keep);
-      v.scrollDOM.removeEventListener("wheel", yours);
-      v.contentDOM.removeEventListener("keydown", yours);
-      v.contentDOM.removeEventListener("keyup", keep);
-      v.contentDOM.removeEventListener("mouseup", keep);
-    };
+  useEffect(() => (cmView && active ? keepSpot(cmView, spotKey) : undefined),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cmView]);
+    [cmView]);
   // The open note's file, so the editor can save a pasted image beside it and load relative images.
   const [path, setPath] = useState<string | undefined>();
   useEffect(() => {
