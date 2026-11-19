@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.2.4 (2026-11-19)
 
 - A long note with many images comes back exactly where you left it. Its images' heights came in
   after the place was put back, moved the view several images on, and that place was saved over
