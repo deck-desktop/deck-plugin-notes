@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- A long note with many images comes back exactly where you left it. Its images' heights came in
+  after the place was put back, moved the view several images on, and that place was saved over
+  the one you left. Each note is also drawn once when opened, not twice.
+
 ## 1.2.3 (2026-11-13)
 
 - A note with images, tables or code blocks comes back at the same place too. It was put back by

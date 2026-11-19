@@ -3,10 +3,12 @@
 //
 // Kept as a place in the text, not a pixel offset: the line at the top of the view and how far into
 // it, and the cursor. Live Markdown draws images, tables, code blocks and maths at their real height
-// only once they render, and an image above you loads after the text, so a saved scrollTop lands
-// somewhere else by the time the note has settled. The place is put back on every frame, and again
-// whenever the note's height changes, until it has been still for a moment or a few seconds pass,
-// or you scroll, click or type yourself.
+// only once they render, and a long note is parsed in the background, so the lines above you keep
+// changing height for a moment after the note opens. The place is put back on every frame until it
+// holds, and again whenever the note's height changes, for a few seconds or until you scroll, click
+// or type yourself. Holding for a few frames is not the end of it: the heights of a long note's
+// images came in after that, moved the view several images on, and that place was then saved over
+// the one you left.
 import type { EditorView } from "@codemirror/view";
 
 interface Spot { pos: number; offset: number; head: number }
@@ -35,17 +37,16 @@ function putBack(v: EditorView, s: Spot): boolean {
 export function keepSpot(v: EditorView, key: string): () => void {
   const saved = spots.get(key);
   let restoring = !!saved, raf = 0, still = 0;
-  const until = Date.now() + 5000;
   if (saved && saved.head <= v.state.doc.length) v.dispatch({ selection: { anchor: saved.head } });
+  // Put back on every frame until it has held for a few in a row; a later change of height starts
+  // this again (below) for as long as the place is being restored.
   const tick = () => {
     if (!saved || !restoring) return;
-    // Done once it has held for a few frames in a row (the images have their height), or time is up.
     still = putBack(v, saved) ? still + 1 : 0;
-    if (still >= 10 || Date.now() > until) restoring = false;
-    else raf = requestAnimationFrame(tick);
+    if (still < 10) raf = requestAnimationFrame(tick);
   };
   raf = requestAnimationFrame(tick);
-  // Something above grew (an image, a table) after the place had held: put it back again.
+  // Something above grew (an image, a table, the rest of the note parsed): put it back again.
   const grew = new ResizeObserver(() => {
     if (!saved || !restoring) return;
     still = 0;
@@ -53,6 +54,8 @@ export function keepSpot(v: EditorView, key: string): () => void {
     raf = requestAnimationFrame(tick);
   });
   grew.observe(v.contentDOM);
+  // Restoring ends after a few seconds, or as soon as you scroll, click or type.
+  const stop = setTimeout(() => { restoring = false; }, 5000);
 
   // Saved as you scroll, click and type; not while putting it back, when the editor's own scrolling
   // would be saved over it, and never on unmount, when the editor is gone and reads 0.
@@ -67,6 +70,7 @@ export function keepSpot(v: EditorView, key: string): () => void {
   v.contentDOM.addEventListener("mouseup", keep);
   return () => {
     cancelAnimationFrame(raf);
+    clearTimeout(stop);
     grew.disconnect();
     v.scrollDOM.removeEventListener("scroll", keep);
     v.scrollDOM.removeEventListener("wheel", yours);

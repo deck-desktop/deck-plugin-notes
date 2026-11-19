@@ -84,11 +84,18 @@ export function PaneView({ cwd }: { cwd: string }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [cmView]);
   // The open note's file, so the editor can save a pasted image beside it and load relative images.
-  const [path, setPath] = useState<string | undefined>();
+  // Kept with the note it is for, and the editor waits for it: drawn first without it (or with the
+  // last note's), the note was drawn twice, its images missing the first time, and the place it was
+  // left (spot.ts) was put back in the first one and landed images away in the second.
+  const [pathOf, setPath] = useState<{ note: string; path: string | undefined } | null>(null);
+  const path = pathOf?.note === spotKey ? pathOf.path : undefined;
+  const pathKnown = pathOf?.note === spotKey;
   useEffect(() => {
-    if (!scope || !active) { setPath(undefined); return; }
+    if (!scope || !active) return;
     let live = true;
-    void notesPath(scope, active).then((p) => { if (live) setPath(p); }).catch((e) => console.warn("[notes] finding the note's file failed", e));
+    const note = `${scope}/${active}`;
+    void notesPath(scope, active).then((p) => { if (live) setPath({ note, path: p }); })
+      .catch((e) => { console.warn("[notes] finding the note's file failed", e); if (live) setPath({ note, path: undefined }); });
     return () => { live = false; };
   }, [scope, active]);
   const [zoom, setZoom] = useState(loadZoom);
@@ -282,8 +289,8 @@ export function PaneView({ cwd }: { cwd: string }) {
             {/* Keyed by scope+name: MarkdownLive builds its CodeMirror state once and thereafter
                 only patches the doc, so remounting per note is what gives each its own undo
                 history. NOT keyed on zoom — that would throw the history away on every step. */}
-            <MarkdownLive key={`${current}/${active}/${path ?? ""}`}
-              value={text} path={path} onChange={setText} onView={setCmView} flush fontSize={zoom} />
+            {pathKnown && <MarkdownLive key={`${current}/${active}`}
+              value={text} path={path} onChange={setText} onView={setCmView} flush fontSize={zoom} />}
           </div>
         </div>
       ) : (
